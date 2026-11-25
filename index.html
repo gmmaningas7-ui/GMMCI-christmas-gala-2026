@@ -6,6 +6,18 @@
 <meta name="theme-color" content="#052313">
 <meta name="description" content="GMMCI 35th Anniversary & Christmas Gala interactive invitation">
 <title>GMMCI 35th Anniversary & Christmas Gala</title>
+<script>
+document.documentElement.classList.add('intro-pending');
+window.setTimeout(function(){
+  if (!window.galaIntroReady) {
+    document.documentElement.classList.remove('intro-pending');
+    document.body && document.body.classList.remove('lock');
+    var g=document.getElementById('gate'),m=document.getElementById('main');
+    if(g)g.hidden=true;
+    if(m)m.removeAttribute('inert');
+  }
+},10000);
+</script>
 <style>
 :root{--navy:#072915;--navy2:#0a391d;--navy3:#125c30;--gold:#e7c273;--gold2:#f7e6be;--cream:#fff8e7;--muted:#d8dfeb;--line:rgba(231,194,115,.34);--shadow:0 20px 55px rgba(0,0,0,.26)}
 *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;font-family:Georgia,"Times New Roman",serif;background:radial-gradient(circle at top,#146032 0%,#082d17 37%,#062512 100%);color:var(--cream);overflow-x:hidden} img{max-width:100%;display:block} a{color:inherit} button,input,textarea{font:inherit} button{cursor:pointer} body.lock{overflow:hidden}
@@ -73,6 +85,28 @@ footer{background-color:#041b0e}.gate-flourish .star{position:static}
 #gate.opening .gatebox{overflow:visible}
 #gate.open .gatebox{transform:scale(.985);transition:transform .65s ease}
 @media(prefers-reduced-motion:reduce){#gate .envelope-letter,#gate .envelope:before,#gate .envelope .seal,#gate .gate-title,#gate #open-main,#gate .gatebox,#gate{transition:none!important;animation:none!important}}
+
+
+/* V10 — first-paint cover and letter-to-invitation transition */
+html.intro-pending,html.intro-pending body{overflow:hidden}
+html.intro-pending #main{visibility:hidden;pointer-events:none}
+html.intro-pending #gate[hidden]{display:grid!important}
+html.intro-pending .skip{visibility:hidden}
+#gate{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+#gate.opening{overflow:hidden}
+#gate .envelope-letter{transition:transform .8s cubic-bezier(.19,1,.22,1) .86s,opacity .2s ease .65s}
+#gate.opening .envelope-letter{transform:translateY(-112%)}
+#gate.expanding .envelope-letter{visibility:hidden}
+#gate.expanding .gatebox{opacity:0;transition:opacity .5s ease;pointer-events:none}
+#gate .letter-flight{position:fixed;z-index:100;pointer-events:none;overflow:hidden;display:grid;place-items:center;box-sizing:border-box;border:1px solid #e4c279;outline:1px solid #aa8347;outline-offset:-6px;background:linear-gradient(145deg,#fff3cf,#ead4a0 58%,#fff0ca);color:#173a23;box-shadow:0 10px 40px #0008;isolation:isolate}
+#gate .letter-flight-copy{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center;width:100%;height:100%;position:absolute;inset:0;z-index:1}
+#gate .letter-flight-copy strong{font-size:clamp(1.35rem,5vw,2rem);font-weight:400;line-height:1;color:#815614}
+#gate .letter-flight-copy small{font-family:Georgia,serif;font-size:clamp(.7rem,2.7vw,.95rem);letter-spacing:.03em;line-height:1.2}
+#gate .letter-flight-copy .letter-diamond{color:#b48a3b;font-size:.9rem}
+#gate .letter-flight-art{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at center,#0b391d,#041e0f);opacity:0;z-index:2}
+#gate .letter-flight-art img{display:block;width:min(840px,92%);height:auto;max-height:82%;object-fit:contain}
+#gate.open{transition:opacity .48s ease,visibility .48s ease}
+@media(prefers-reduced-motion:reduce){#gate,#gate .gatebox{transition:none!important}}
 
 </style>
 </head>
@@ -228,17 +262,44 @@ function openInvitation(){
   $('open-envelope').setAttribute('aria-label','Opening invitation');
   $('open-main').textContent='Opening invitation…';
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let finished=false;
   function reveal(){
-    gate.classList.add('open');
+    if(finished)return; finished=true;
+    document.documentElement.classList.remove('intro-pending');
     document.body.classList.remove('lock');
-    main.inert=false; main.removeAttribute('inert');
     window.scrollTo({top:0,behavior:'instant'});
-    document.querySelector('.hero a').focus({preventScroll:true});
-    setTimeout(()=>{gate.hidden=true;},reduced?0:690);
+    gate.classList.add('open');
+    setTimeout(()=>{
+      gate.hidden=true; main.inert=false; main.removeAttribute('inert');
+      document.querySelector('.hero a').focus({preventScroll:true});
+    },reduced?0:510);
   }
   if(reduced){reveal();return;}
   setTimeout(()=>gate.classList.add('flap-back'),550);
-  setTimeout(reveal,1580);
+  // The letter must finish sliding out before it can expand.
+  setTimeout(()=>{
+    try {
+      const letter=gate.querySelector('.envelope-letter');
+      const r=letter.getBoundingClientRect();
+      const flight=document.createElement('div');flight.className='letter-flight';flight.setAttribute('aria-hidden','true');
+      Object.assign(flight.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
+      const copy=document.createElement('div');copy.className='letter-flight-copy';copy.innerHTML=letter.innerHTML;
+      const art=document.createElement('div');art.className='letter-flight-art';
+      const image=document.querySelector('.hero-lettering').cloneNode();image.removeAttribute('class');image.alt='';art.appendChild(image);
+      flight.append(copy,art);gate.appendChild(flight);gate.classList.add('expanding');
+      const w=document.documentElement.clientWidth,h=window.innerHeight;
+      const duration=920;
+      const a=flight.animate([
+        {left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',borderRadius:'2px'},
+        {left:'0px',top:'0px',width:w+'px',height:h+'px',borderRadius:'0px'}
+      ],{duration,easing:'cubic-bezier(.22,.72,.2,1)',fill:'forwards'});
+      copy.animate([{opacity:1,transform:'scale(1)'},{opacity:1,transform:'scale(1.16)',offset:.25},{opacity:0,transform:'scale(1.28)',offset:.65},{opacity:0}],{duration,fill:'forwards'});
+      art.animate([{opacity:0},{opacity:0,offset:.36},{opacity:1,offset:.82},{opacity:1}],{duration,fill:'forwards'});
+      a.finished.then(reveal,reveal);
+    }catch(e){reveal();}
+  },1730);
+  // A cancelled animation must never trap guests.
+  setTimeout(reveal,3200);
 }
 $('open-envelope').addEventListener('click',openInvitation); $('open-main').addEventListener('click',openInvitation);
 gate.addEventListener('keydown',e=>{if(e.key!=='Tab') return; const focusables=[$('open-envelope'),$('open-main')]; const first=focusables[0], last=focusables[1]; if(e.shiftKey && document.activeElement===first){e.preventDefault(); last.focus();} else if(!e.shiftKey && document.activeElement===last){e.preventDefault(); first.focus();} });
@@ -247,7 +308,7 @@ const eventTime=new Date('2026-12-18T18:00:00+08:00').getTime(); function tick()
 $('calendar-btn').addEventListener('click',()=>{const cal=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//GMMCI//Christmas Gala 2026//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:gmmci-christmas-gala-20261218','DTSTAMP:20261125T000000Z','DTSTART:20261218T100000Z','DTEND:20261218T160000Z','SUMMARY:GMMCI 35th Anniversary & Christmas Gala','LOCATION:Marco Polo, Ortigas City','DESCRIPTION:Formal attire. G.M. Maningas Construction, Inc.','END:VEVENT','END:VCALENDAR',''].join('\r\n'); const blob=new Blob([cal],{type:'text/calendar;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='GMMCI-Christmas-Gala-2026.ics'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1200); });
 const viewer=$('viewer'), viewerImg=$('viewer-image'); document.querySelectorAll('.viewer-trigger').forEach(btn=>btn.addEventListener('click',()=>{viewerImg.src=btn.querySelector("img").src; viewerImg.alt=btn.dataset.alt||''; viewer.showModal();})); $('close-viewer').addEventListener('click',()=>viewer.close()); viewer.addEventListener('click',e=>{if(e.target===viewer) viewer.close();});
 // Activate the envelope only after initialization completes.
-main.inert=true; document.body.classList.add('lock'); gate.hidden=false; $('open-envelope').focus({preventScroll:true});
+main.inert=true; document.body.classList.add('lock'); gate.hidden=false; window.galaIntroReady=true; $('open-envelope').focus({preventScroll:true});
 </script>
 </body>
 </html>
