@@ -49,6 +49,31 @@ body{background:#052313}main{background:radial-gradient(ellipse at 50% 5%,#10462
 .btn,.tab-btn.active{color:#102a18}.btn.outline{color:var(--gold)}.chapter-divider{opacity:.95}.hero-wave{bottom:-2px}
 footer{background-color:#041b0e}.gate-flourish .star{position:static}
 @media(max-width:540px){.gatebox{padding:24px 14px 30px}.gate-ornament.o1,.gate-ornament.o3{width:37px;height:37px}.gate-ornament.o1{left:14px}.gate-ornament.o3{right:14px}.gate-ornament.o2,.gate-ornament.o4{width:20px;height:20px}.gate-ornament.o2{left:10px}.gate-ornament.o4{right:10px}}
+
+/* V9: invitation opening only; all main-page styling remains V8. */
+#gate{transition:opacity .65s ease,visibility .65s ease}
+#gate .envelope{overflow:visible;perspective:900px;isolation:isolate;transition:transform .55s cubic-bezier(.2,.65,.25,1),box-shadow .55s ease;position:relative}
+#gate .envelope:before{z-index:4;transform-origin:50% 0;backface-visibility:visible;transition:transform .68s cubic-bezier(.22,.7,.25,1) .2s;filter:drop-shadow(0 2px 1px #cba65488)}
+#gate .envelope:after{z-index:3;border-radius:0 0 2px 2px; background:linear-gradient(32deg,#092d19 49.2%,#d6ad55 50%,#164b2c 50.8%)}
+#gate .envelope .seal{z-index:6;transition:opacity .3s ease,transform .38s ease}
+#gate .envelope-shine{border-radius:2px;clip-path:inset(0);z-index:5}
+#gate .envelope-letter{position:absolute;left:9%;width:82%;height:85%;top:8%;z-index:2;border:1px solid #e4c279;outline:1px solid #aa8347;outline-offset:-6px;background:linear-gradient(145deg,#fff3cf,#ead4a0 58%,#fff0ca);color:#173a23;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-shadow:0 5px 14px #0005;opacity:0;transform:translateY(0);transition:transform .8s cubic-bezier(.19,1,.22,1) .77s,opacity .2s ease .55s;pointer-events:none}
+#gate .envelope-letter strong{font-size:clamp(1.35rem,5vw,2rem);font-weight:400;line-height:1;color:#815614}
+#gate .envelope-letter small{font-family:Georgia,serif;font-size:clamp(.7rem,2.7vw,.95rem);letter-spacing:.03em;line-height:1.2}
+#gate .envelope-letter .letter-diamond{color:#b48a3b;font-size:.9rem}
+#gate.opening .envelope{animation:none;transform:translateY(5px);box-shadow:0 18px 42px #0007,0 0 48px #ebc56a44}
+#gate.opening .envelope .seal{animation:none;opacity:0;transform:translate(-50%,-50%) scale(1.27)}
+#gate.opening .envelope:before{transform:rotateX(180deg)}
+#gate.flap-back .envelope:before{z-index:1}
+#gate.opening .envelope-letter{opacity:1;transform:translateY(-87%)}
+#gate.opening .envelope-shine{animation:none;opacity:0}
+#gate.opening #open-main{opacity:.5;transition:opacity .45s ease;pointer-events:none}
+#gate.opening .gate-title{opacity:.28;transition:opacity .6s ease}
+#gate.opening .envelope{pointer-events:none}
+#gate.opening .gatebox{overflow:visible}
+#gate.open .gatebox{transform:scale(.985);transition:transform .65s ease}
+@media(prefers-reduced-motion:reduce){#gate .envelope-letter,#gate .envelope:before,#gate .envelope .seal,#gate .gate-title,#gate #open-main,#gate .gatebox,#gate{transition:none!important;animation:none!important}}
+
 </style>
 </head>
 <body>
@@ -71,7 +96,7 @@ footer{background-color:#041b0e}.gate-flourish .star{position:static}
     <div class="gate-flourish"><span class="line"></span><span class="star">✦</span><span class="line"></span></div>
     <div class="eyebrow">A special invitation</div>
     <h1 id="gate-title" class="gate-title">An Evening<br>of Excellence</h1>
-    <button class="envelope" id="open-envelope" aria-label="Open invitation"><span class="envelope-shine"></span><span class="seal">35</span></button>
+    <button class="envelope" id="open-envelope" aria-label="Open invitation"><span class="envelope-letter" aria-hidden="true"><span class="letter-diamond">✦</span><strong>35 Years of Excellence</strong><small>A Grand Christmas Gala</small><span class="letter-diamond">✦</span></span><span class="envelope-shine"></span><span class="seal">35</span></button>
     <button class="btn" id="open-main">Open invitation</button>
     <p class="small-note" style="margin:14px 0 0">Friday, December 18, 2026</p>
   </div>
@@ -197,7 +222,24 @@ const $ = id => document.getElementById(id);
 function fillStars(){document.querySelectorAll('.stars').forEach((area,ix)=>{if(area.dataset.done) return; area.dataset.done='1'; for(let i=0;i<34;i++){const s=document.createElement('span'); s.className='star'; s.textContent=i%4===0?'✦':'·'; s.style.left=((i*29+17*ix)%100)+'%'; s.style.top=((i*53+9)%100)+'%'; s.style.animationDelay=(-(i%7)*.45)+'s'; s.style.fontSize=(i%4===0?13:8)+'px'; area.appendChild(s);}})}
 fillStars();
 const gate=$('gate'), main=$('main');
-function openInvitation(){if(gate.classList.contains('open')) return; gate.classList.add('open'); document.body.classList.remove('lock'); main.inert=false; main.removeAttribute('inert'); window.scrollTo(0,0); document.querySelector('.hero a').focus({preventScroll:true}); setTimeout(()=>{gate.hidden=true;},760);}
+function openInvitation(){
+  if(gate.classList.contains('opening') || gate.classList.contains('open')) return;
+  gate.classList.add('opening');
+  $('open-envelope').setAttribute('aria-label','Opening invitation');
+  $('open-main').textContent='Opening invitation…';
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function reveal(){
+    gate.classList.add('open');
+    document.body.classList.remove('lock');
+    main.inert=false; main.removeAttribute('inert');
+    window.scrollTo({top:0,behavior:'instant'});
+    document.querySelector('.hero a').focus({preventScroll:true});
+    setTimeout(()=>{gate.hidden=true;},reduced?0:690);
+  }
+  if(reduced){reveal();return;}
+  setTimeout(()=>gate.classList.add('flap-back'),550);
+  setTimeout(reveal,1580);
+}
 $('open-envelope').addEventListener('click',openInvitation); $('open-main').addEventListener('click',openInvitation);
 gate.addEventListener('keydown',e=>{if(e.key!=='Tab') return; const focusables=[$('open-envelope'),$('open-main')]; const first=focusables[0], last=focusables[1]; if(e.shiftKey && document.activeElement===first){e.preventDefault(); last.focus();} else if(!e.shiftKey && document.activeElement===last){e.preventDefault(); first.focus();} });
 Array.from(document.querySelectorAll('.tab-btn')).forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab-btn').forEach(b=>{b.classList.remove('active'); b.setAttribute('aria-selected','false');}); document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active')); btn.classList.add('active'); btn.setAttribute('aria-selected','true'); $(btn.dataset.panel).classList.add('active');}));
